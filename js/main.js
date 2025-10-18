@@ -200,6 +200,10 @@
 
             .map(lang => {
 
+                /**
+                 * @type {string}
+                 * @description Nombre del idioma en español.
+                 */
                 const nombre = languageNames[lang.detectedLanguage] || lang.detectedLanguage;
 
                 return `${nombre} (${lang.detectedLanguage}): ${(lang.confidence * 100).toFixed(2)}%`;
