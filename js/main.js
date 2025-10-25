@@ -6,91 +6,63 @@
     ----------  /main.js  -----------------------------
     ---------------------------------------------------
 */
-    
+
+//@ts-check
 
 
 (() => {
 
 
     /**
-     * @type {LanguageDetector}
-     * @description
-     *     Instancia del detector de idiomas creada por LanguageDetector.create().
-     *     Es null/undefined hasta que la inicialización haya finalizado correctamente.
+     * Instancia del modelo `LanguageDetector` que se usará para identificar el idioma
+     * del texto ingresado por el usuario. Se inicializa de forma asíncrona al ejecutar `initDetector()`.
+     * @type {LanguageDetector|undefined}
      */
     let detector;
 
+     // @ts-ignore
+    const LanguageDetector = window.LanguageDetector;
+
+
 
     /**
-     * @type {HTMLInputElement}
-     * @description Elemento de entrada de texto donde el usuario escribe el texto a analizar.
+     * @type {HTMLInputElement|null}
+     * @description
+     * Campo de texto donde el usuario introduce la frase o texto para detectar su idioma.
      */
     const textInput = document.querySelector('#text');
 
 
     /**
-     * @type {HTMLPreElement}
-     * @description Elemento HTML donde se muestran los resultados de la detección de idioma.
+     * @type {HTMLPreElement|null}
+     * @description
+     * Elemento del DOM donde se muestran los resultados del proceso de detección del idioma.
      */
     const output = document.querySelector('#output');
 
-    
+
+    if(!textInput || !output) {
+        throw new Error('❌ Faltan elementos del DOM (verifica #text y #output)');
+    }
+
+
     /**
-     * @type {Object}
-     * @description Mapa de códigos de idioma a nombres de idioma en español.
-     *      Basado en ISO 639-1.
+     * @type {Record<string, string>}
+     * @description
+     * Mapa de códigos ISO 639-1 de idiomas a sus nombres equivalentes en español.
+     * Este objeto permite mostrar resultados legibles al usuario final.
      */
     const languageNames = {
-        af: "Afrikáans",
-        ar: "Árabe",
-        bg: "Búlgaro",
-        bn: "Bengalí",
-        ca: "Catalán",
-        cs: "Checo",
-        da: "Danés",
-        de: "Alemán",
-        el: "Griego",
-        en: "Inglés",
-        es: "Español",
-        et: "Estonio",
-        fa: "Persa",
-        fi: "Finés",
-        fr: "Francés",
-        gu: "Gujarati",
-        he: "Hebreo",
-        hi: "Hindi",
-        hr: "Croata",
-        hu: "Húngaro",
-        id: "Indonesio",
-        it: "Italiano",
-        ja: "Japonés",
-        kn: "Canarés",
-        ko: "Coreano",
-        lt: "Lituano",
-        lv: "Letón",
-        ml: "Malayalam",
-        mr: "Marathi",
-        nl: "Neerlandés",
-        no: "Noruego",
-        pa: "Punyabí",
-        pl: "Polaco",
-        pt: "Portugués",
-        ro: "Rumano",
-        ru: "Ruso",
-        sk: "Eslovaco",
-        sl: "Esloveno",
-        so: "Somalí",
-        sq: "Albanés",
-        sv: "Sueco",
-        sw: "Suajili",
-        ta: "Tamil",
-        te: "Telugu",
-        th: "Tailandés",
-        tr: "Turco",
-        uk: "Ucraniano",
-        ur: "Urdu",
-        vi: "Vietnamita",
-        zh: "Chino"
+        af: "Afrikáans", ar: "Árabe", bg: "Búlgaro", bn: "Bengalí", ca: "Catalán",
+        cs: "Checo", da: "Danés", de: "Alemán", el: "Griego", en: "Inglés",
+        es: "Español", et: "Estonio", fa: "Persa", fi: "Finés", fr: "Francés",
+        gu: "Gujarati", he: "Hebreo", hi: "Hindi", hr: "Croata", hu: "Húngaro",
+        id: "Indonesio", it: "Italiano", ja: "Japonés", kn: "Canarés", ko: "Coreano",
+        lt: "Lituano", lv: "Letón", ml: "Malayalam", mr: "Marathi", nl: "Neerlandés",
+        no: "Noruego", pa: "Punyabí", pl: "Polaco", pt: "Portugués", ro: "Rumano",
+        ru: "Ruso", sk: "Eslovaco", sl: "Esloveno", so: "Somalí", sq: "Albanés",
+        sv: "Sueco", sw: "Suajili", ta: "Tamil", te: "Telugu", th: "Tailandés",
+        tr: "Turco", uk: "Ucraniano", ur: "Urdu", vi: "Vietnamita", zh: "Chino"
     };
 
 
@@ -102,62 +74,61 @@
     /**
      * @async
      * @function initDetector
-     * @description Inicializa el detector de idiomas.
+     * @description
+     * Inicializa el modelo `LanguageDetector` comprobando primero su disponibilidad.
+     * Si el modelo no está cargado localmente, descarga los componentes necesarios.
+     * 
+     * Una vez listo, invoca automáticamente la función `detectLanguage()` para analizar
+     * el texto actual del usuario.
+     * 
      * @returns {Promise<void>}
-    */
-
+     */
     const initDetector = async () => {
 
-
         /**
-         * @type {string}
-         * @description Disponibilidad del detector de idiomas en el navegador.
+         * @type {"available" | "unavailable" | "downloadable"}
+         * @description Estado actual de disponibilidad del modelo de detección en el navegador.
          */
         const avail = await LanguageDetector.availability();
 
-
         if (avail === "unavailable") {
-            output.textContent = '⚠️ Lo siento, El detector de idiomas no esta disponible en tu navegador.';
+            output.textContent = '⚠️ Lo siento, el detector de idiomas no está disponible en tu navegador.';
             return;
         }
 
-        if ((avail === "available")) {
+        if (avail === "available") {
 
             detector = await LanguageDetector.create();
             output.textContent = '✅ El detector de idiomas está listo para usarse.';
 
-            //  -----  Ejecutar función para detectar idioma  -----
+            // Ejecutar detección inicial
             detectLanguage();
 
-        }
+        } else {
 
-
-        else {
-
+            // Si requiere descarga local, monitorizar el progreso
             detector = await LanguageDetector.create({
-
+                
+                /**
+                 * Monitorea el progreso de descarga del modelo local
+                 * @param {{ addEventListener: (event: string, callback: (e: ProgressEvent) => void) => void }} m
+                 */
                 monitor(m) {
-
+                    
                     m.addEventListener('downloadprogress', e => {
-
                         const percent = Math.round((e.loaded / e.total) * 100);
                         output.textContent = `⏳ Descargando modelo de IA Local ${percent}%`;
-
                     });
                 }
             });
-
         }
-
 
         await detector.ready;
         output.textContent = '✅ El detector de idiomas está listo para usarse.';
 
-
-        //  -----  Ejecutar función para detectar idioma  -----
+        // Ejecutar detección inicial
         detectLanguage();
-
-    }
+    };
 
 
 
@@ -168,61 +139,58 @@
     /**
      * @async
      * @function detectLanguage
-     * @description Detecta el idioma del texto ingresado.
+     * @description
+     * Analiza el texto actual del campo de entrada e intenta detectar
+     * el idioma o idiomas predominantes en él utilizando el modelo `LanguageDetector`.
+     * 
+     * Los resultados se muestran en pantalla con su nivel de confianza.
+     * 
      * @returns {Promise<void>}
      */
-
     const detectLanguage = async () => {
 
         const text = textInput.value.trim();
 
-        if (!detector || text === "")
-            return;
-
+        if (!detector || text === "") return;
 
         /**
          * @typedef {Object} DetectionResult
-         * @property {string} detectedLanguage - Código ISO del idioma detectado (por ejemplo, "en", "es").
-         * @property {number} confidence - Nivel de confianza (0 a 1).
-        */
+         * @property {string} detectedLanguage - Código ISO 639-1 del idioma detectado (por ejemplo, `"en"`, `"es"`).
+         * @property {number} confidence - Nivel de confianza de la predicción (valor entre `0` y `1`).
+         */
 
         /**
          * @type {DetectionResult[]}
-         * @description Resultado de la detección de idioma.
-        */
+         * @description Resultado de la detección del modelo.
+         */
         const result = await detector.detect(text);
 
-
-        //  -----  Traducir código de idioma a español  -----
+        // Traducir los códigos a nombres legibles en español
         const textOutput = result
-
+            
             .map(lang => {
-
-                /**
-                 * @type {string}
-                 * @description Nombre del idioma en español.
-                 */
                 const nombre = languageNames[lang.detectedLanguage] || lang.detectedLanguage;
-
                 return `${nombre} (${lang.detectedLanguage}): ${(lang.confidence * 100).toFixed(2)}%`;
             })
+            
+            // .join("&nbsp;&nbsp;&nbsp;");
+            .join("<br>");
 
-            .join("&nbsp; &nbsp; &nbsp;");
-
-        //  -----  Mostrar resultados en el HTML  -----            
+        // Mostrar resultados formateados en el HTML
         output.innerHTML = `
             🗣️ Idioma(s) detectado(s):
-            <h3 class="detected-languages"> ${textOutput} </h3>
+            <h3 class="detected-languages">${textOutput}</h3>
         `;
 
     };
 
+  
 
-    //  -----  Inicializar el detector de idiomas  -----
+    //  -----  Inicia el detector de idiomas al cargar el script  -----
     initDetector();
 
 
-    //  -----  Evento Input para detectar idioma  -----
+    //  -----  Detectar automáticamente mientras el usuario escribe  -----
     textInput.addEventListener('input', detectLanguage);
 
 
