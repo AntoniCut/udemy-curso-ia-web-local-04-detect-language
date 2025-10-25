@@ -6,15 +6,15 @@
     ----------  /main.js  -----------------------------
     ---------------------------------------------------
 */
-
+    
 
 
 (() => {
 
 
     /**
-     * @type {Object|null}
-     * @description 
+     * @type {LanguageDetector}
+     * @description
      *     Instancia del detector de idiomas creada por LanguageDetector.create().
      *     Es null/undefined hasta que la inicialización haya finalizado correctamente.
      */
@@ -38,6 +38,7 @@
     /**
      * @type {Object}
      * @description Mapa de códigos de idioma a nombres de idioma en español.
+     *      Basado en ISO 639-1.
      */
     const languageNames = {
         af: "Afrikáans",
@@ -110,11 +111,8 @@
 
         /**
          * @type {string}
-         * @description 
-         *      Disponibilidad del detector de idiomas en el navegador. 
-         *      Puede ser "available", "unavailable" o "downloading".
+         * @description Disponibilidad del detector de idiomas en el navegador.
          */
-
         const avail = await LanguageDetector.availability();
 
 
